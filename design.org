@@ -1,0 +1,14 @@
+#+title: design
+
+* Máquina de Estados
+** payment.created
+** payment.authorized
+** payment.submitted
+** payment.confirmed
+** payment.failed
+** payment.reconciled
+
+* Matriz de Fallos
+| Falla | Estado Actual | Estrategia de Recuperación |
+|-------+---------------+----------------------------|
+|       |               |                                |
