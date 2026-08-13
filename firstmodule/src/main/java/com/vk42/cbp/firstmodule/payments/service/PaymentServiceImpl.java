@@ -83,7 +83,7 @@ public class PaymentServiceImpl implements PaymentService{
             throw new PaymentNotFoundException("Payment Intent Not Found");
         }
 
-        if (!paymentIntent.get().getPaymentState().canTransactionTo(payload.newState())) {
+        if (!paymentIntent.get().getPaymentState().canTransitionTo(payload.newState())) {
             throw new IllegalStateTransactionException("Transaction not permitted from " +
                     paymentIntent.get().getPaymentState() + " to " + payload.newState());
         }

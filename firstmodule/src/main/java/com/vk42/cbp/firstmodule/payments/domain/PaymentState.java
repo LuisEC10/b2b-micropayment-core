@@ -8,7 +8,7 @@ public enum PaymentState {
     FAILED,
     RECONCILED;
 
-    public boolean canTransactionTo(PaymentState nextState) {
+    public boolean canTransitionTo(PaymentState nextState) {
         return switch (this) {
             case CREATED -> nextState == AUTHORIZED || nextState == FAILED;
             case AUTHORIZED -> nextState == SUBMITTED || nextState == FAILED;
