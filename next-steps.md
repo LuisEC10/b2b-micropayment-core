@@ -89,6 +89,32 @@ graph TB
 
 ---
 
+### 🔹 Fase 0: Consolidación y Verificación de los Fundamentos Core (Puntos de Fortaleza)
+**Meta:** Validar, pulir y estabilizar los pilares base ya existentes del motor de pagos (FSM, Idempotencia, Outbox básico, JWS/RSA, Tracing MDC y Excepciones) antes de proceder al desacoplamiento guiado por eventos y resiliencia avanzada.
+
+#### Archivos involucrados:
+- **Modificar:** `firstmodule/src/main/java/com/vk42/cbp/firstmodule/payments/domain/PaymentState.java` (Renombrar `canTransactionTo` a `canTransitionTo`)
+- **Modificar:** `firstmodule/src/main/java/com/vk42/cbp/firstmodule/payments/service/PaymentServiceImpl.java` (Corregir importación de Jackson a `com.fasterxml.jackson.databind.ObjectMapper` y actualizar llamadas a `canTransitionTo`)
+- **Verificar/Refactorizar:** `firstmodule/src/main/java/com/vk42/cbp/firstmodule/security/jws/WorkerSignatureService.java` y `MandateVerifier.java` (Carga segura y tolerante de llaves RSA)
+- **Verificar:** `firstmodule/src/main/java/com/vk42/cbp/firstmodule/shared/filters/RequestIdFilter.java` y `GlobalExceptionHandler.java`
+- **Crear/Test:** `firstmodule/src/test/java/com/vk42/cbp/firstmodule/payments/PaymentCoreStateAndIdempotencyTest.java`
+
+#### Requisitos de Implementación:
+1. **Máquina de Estados de Pago (`PaymentState`)**:
+   - Corregir la nomenclatura del método a `canTransitionTo(PaymentState nextState)`.
+   - Garantizar que las transiciones de estado (`CREATED` -> `AUTHORIZED` -> `SUBMITTED` -> `CONFIRMED` / `FAILED` -> `RECONCILED`) estén 100% probadas unitariamente.
+2. **Idempotencia y Persistencia JSONB**:
+   - Asegurar que la serialización de respuestas en `IdempotencyKeyRecord` utilice la librería estándar `com.fasterxml.jackson.databind.ObjectMapper`.
+   - Validar que ante peticiones duplicadas con la misma `idempotencyKey`, se retorne la respuesta cacheada sin re-ejecutar lógica de negocio.
+3. **Firma Criptográfica Asimétrica (JWS / RSA)**:
+   - Validar la firma RS256 mediante Nimbus JOSE en `WorkerSignatureService` y su posterior verificación en `MandateVerifier`.
+   - Garantizar resiliencia al arrancar si las llaves no han sido provistas en entornos de desarrollo/local.
+4. **Manejo Global de Excepciones y Trazabilidad (MDC)**:
+   - Confirmar que `GlobalExceptionHandler` retorne DTOs `ErrorResponse` estandarizados (`PAYMENT_NOT_FOUND`, `INVALID_STATE_TRANSITION`, `VALIDATION_FAILED`).
+   - Verificar que `RequestIdFilter` inyecte correctamente `X-Request-ID` en el MDC de SLF4J y en las respuestas HTTP.
+
+---
+
 ### 🔹 Fase 1: Event-Driven In-Process Decoupling
 **Meta:** Reemplazar llamadas directas o acopladas entre `payments` y `outbox` mediante `Spring ApplicationEventPublisher` y `@TransactionalEventListener`.
 
@@ -204,6 +230,7 @@ graph TB
 
 | Fase | Comando de Verificación | Resultado Esperado |
 | :--- | :--- | :--- |
+| **Fase 0: Fundamentos Core** | `./mvnw test -Dtest=PaymentCoreStateAndIdempotencyTest` | Validar máquina de estados, idempotencia JSONB, firma JWS RSA y filtros de tracing MDC. |
 | **Fase 1: Event-Driven** | `./mvnw test -Dtest=PaymentEventPublisherTest` | Transacción confirmada publica evento y genera `OutboxEvent` en `AFTER_COMMIT`. |
 | **Fase 2: Retry & DLQ** | `./mvnw test -Dtest=OutboxRetryDLQTest` | Eventos con 5 fallas pasan a `outbox_dlq` y endpoint admin permite reintento. |
 | **Fase 3: Spring Modulith** | `./mvnw test -Dtest=ModularArchitectureTest` | `verify()` pasa con 0 violaciones de dependencias entre paquetes. |
