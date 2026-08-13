@@ -4,6 +4,7 @@ import com.vk42.cbp.firstmodule.dto.PaymentInitializationRequest;
 import com.vk42.cbp.firstmodule.dto.WebhookPayload;
 import com.vk42.cbp.firstmodule.entities.PaymentState;
 import com.vk42.cbp.firstmodule.services.PaymentService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,12 +19,12 @@ public class PaymentController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createPayment(@RequestBody PaymentInitializationRequest request) {
+    public ResponseEntity<?> createPayment(@Valid @RequestBody PaymentInitializationRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(this.paymentService.initializePayment(request));
     }
 
     @PostMapping("/webhooks")
-    public ResponseEntity<?> webhookMotor(@RequestBody WebhookPayload payload) {
+    public ResponseEntity<?> webhookMotor(@Valid @RequestBody WebhookPayload payload) {
         return ResponseEntity.ok(this.paymentService.processWebhooks(payload));
     }
 

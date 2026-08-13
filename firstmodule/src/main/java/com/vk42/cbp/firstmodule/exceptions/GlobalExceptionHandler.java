@@ -3,6 +3,7 @@ package com.vk42.cbp.firstmodule.exceptions;
 import com.vk42.cbp.firstmodule.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -26,4 +27,12 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse("INTERNAL_SERVER_ERROR", ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex) {
+        String errorMessage = ex.getBindingResult().getFieldErrors().getFirst().getDefaultMessage();
+        ErrorResponse error = new ErrorResponse("VALIDATION_FAILED", errorMessage);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
 }

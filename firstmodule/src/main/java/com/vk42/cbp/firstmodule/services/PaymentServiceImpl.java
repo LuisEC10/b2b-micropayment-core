@@ -4,11 +4,13 @@ import com.vk42.cbp.firstmodule.dto.PaymentInitializationRequest;
 import com.vk42.cbp.firstmodule.dto.WebhookPayload;
 import com.vk42.cbp.firstmodule.dto.WebhookResponse;
 import com.vk42.cbp.firstmodule.entities.IdempotencyKeyRecord;
+import com.vk42.cbp.firstmodule.entities.OutboxEvent;
 import com.vk42.cbp.firstmodule.entities.PaymentIntent;
 import com.vk42.cbp.firstmodule.entities.PaymentState;
 import com.vk42.cbp.firstmodule.exceptions.IllegalStateTransactionException;
 import com.vk42.cbp.firstmodule.exceptions.PaymentNotFoundException;
 import com.vk42.cbp.firstmodule.repositories.IdempotencyKeyRecordRepository;
+import com.vk42.cbp.firstmodule.repositories.OutboxEventRepository;
 import com.vk42.cbp.firstmodule.repositories.PaymentIntentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,14 +23,17 @@ public class PaymentServiceImpl implements PaymentService{
 
     final IdempotencyKeyRecordRepository idempotencyKeyRecordRepository;
     final PaymentIntentRepository paymentIntentRepository;
+    final OutboxEventRepository outboxEventRepository;
     final ObjectMapper objectMapper;
 
     public PaymentServiceImpl(
             IdempotencyKeyRecordRepository idempotencyKeyRecordRepository,
-            PaymentIntentRepository paymentIntentRepository, ObjectMapper objectMapper) {
+            PaymentIntentRepository paymentIntentRepository, ObjectMapper objectMapper,
+            OutboxEventRepository outboxEventRepository) {
         this.idempotencyKeyRecordRepository = idempotencyKeyRecordRepository;
         this.paymentIntentRepository = paymentIntentRepository;
         this.objectMapper = objectMapper;
+        this.outboxEventRepository = outboxEventRepository;
     }
 
     @Override
@@ -100,8 +105,21 @@ public class PaymentServiceImpl implements PaymentService{
         newIKR.setHttpStatus(200);
 
         this.paymentIntentRepository.save(paymentIntentDb);
-        this.idempotencyKeyRecordRepository.save(newIKR);
+        // Chaos Simulation
+        //if ("CRASH_TEST".equals(payload.idempotencyKey())) {
+        //    throw new RuntimeException("Simulation: server crashed before final commit");
+        //}
 
+        // Create the message for outbox
+        OutboxEvent event = new OutboxEvent();
+        event.setAggregateType("PaymentIntent");
+        event.setAggregateId(paymentIntentDb.getId().toString());
+        event.setEventType("PAYMENT_" + payload.newState());
+        event.setPayload(jsonString);
+        // save the message
+        this.outboxEventRepository.save(event);
+
+        this.idempotencyKeyRecordRepository.save(newIKR);
         return jsonString;
     }
 
