@@ -13,6 +13,10 @@ import java.text.ParseException;
 public class MandateVerifier {
     private final RSAKey jwk;
     public MandateVerifier(@Value("${worker.crypto.public-key}") String publicKey) {
+        if (publicKey == null || publicKey.isBlank()) {
+            throw new RuntimeException("ERROR: No public key is given");
+        }
+
         try {
             jwk = RSAKey.parse(publicKey);
         } catch (ParseException e) {
