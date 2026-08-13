@@ -43,11 +43,12 @@ graph TB
         subgraph Payments ["payments (Core Engine)"]
             P_CTRL["PaymentController"]
             P_SVC["PaymentServiceImpl"]
+            P_REPO["PaymentIntentRepo & IdempotencyKeyRepo"]
             P_EVENT["PaymentStatusChangedEvent (Domain Event)"]
         end
 
         subgraph Outbox ["outbox (Resilient Messaging)"]
-            OUT_LISTENER["@TransactionalEventListener"]
+            OUT_LISTENER["OutboxEventListener (@TransactionalEventListener)"]
             OUT_WORKER["OutboxProcessorWorker (Exponential Backoff)"]
             DLQ_MGR["OutboxDLQManager"]
         end
@@ -58,7 +59,8 @@ graph TB
         end
 
         subgraph Security ["security (Crypto & JWS)"]
-            JWS_SIGN["WorkerSignatureService (RSA)"]
+            JWS_SIGN["WorkerSignatureService (RSA Signer)"]
+            MANDATE_VER["MandateVerifier (RSA Verifier)"]
         end
     end
 
@@ -69,14 +71,18 @@ graph TB
         DB_DLQ["outbox_dlq"]
     end
 
-    API_REQ -->|HTTP Request| RL_FILTER
+    API_REQ -->|HTTP Request / Mandatos Firmados| RL_FILTER
     RL_FILTER --> MDC_TRACER
     MDC_TRACER --> P_CTRL
+    P_CTRL --> MANDATE_VER
     P_CTRL --> P_SVC
+    P_SVC --> P_REPO
+    P_REPO --> DB_PAY
+    P_REPO --> DB_IDEM
     P_SVC -->|Publica Evento Interno| P_EVENT
     P_EVENT -->|AFTER_COMMIT| OUT_LISTENER
     OUT_LISTENER --> DB_OUT
-    OUT_WORKER -->|Firma Payload| JWS_SIGN
+    OUT_WORKER -->|Firma Payload JWS| JWS_SIGN
     OUT_WORKER -->|Máx Reintentos Superado| DLQ_MGR
     DLQ_MGR --> DB_DLQ
     REC_WORKER --> REC_SVC
