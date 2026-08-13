@@ -1,0 +1,13 @@
+spring.application.name=firstmodule
+
+# database connection
+spring.datasource.url=jdbc:postgresql://localhost:5432/firstmodule
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+
+# jpa
+spring.jpa.hibernate.ddl-auto=update
+
+# worker crypto keys (JWK format)
+worker.crypto.private-key={"kty":"RSA","kid":"worker-key-001",...}
+worker.crypto.public-key={"kty":"RSA","kid":"worker-key-001",...}
