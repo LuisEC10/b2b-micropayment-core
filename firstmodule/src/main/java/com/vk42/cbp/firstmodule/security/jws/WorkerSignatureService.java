@@ -35,14 +35,9 @@ public class WorkerSignatureService {
         );
 
         try {
-            RSASSAVerifier rsassaVerifier = new RSASSAVerifier(jwk.toRSAPublicKey());
-            if (jwsObject.verify(rsassaVerifier)){
-                RSASSASigner rsassaSigner = new RSASSASigner(jwk.toRSAPrivateKey());
-                jwsObject.sign(rsassaSigner);
-                return jwsObject.serialize();
-            } else {
-                throw new RuntimeException("ERROR: Verifying went wrong");
-            }
+            RSASSASigner rsassaSigner = new RSASSASigner(jwk.toRSAPrivateKey());
+            jwsObject.sign(rsassaSigner);
+            return jwsObject.serialize();
         } catch (JOSEException e) {
             throw new RuntimeException("ERROR: Bad sign on payment payload: ", e);
         }

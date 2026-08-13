@@ -1,7 +1,7 @@
 # B2B Micro-Payment Transaction Engine
 
-![Java](https://img.shields.io/badge/Java-21+-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3+-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
+![Java](https://img.shields.io/badge/Java-25+-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1.0-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 
 Un motor de procesamiento de micro-pagos diseñado para entornos B2B de alta exigencia. Esta API RESTful orquesta transacciones financieras garantizando consistencia absoluta de datos, control de duplicidad mediante llaves de idempotencia y validación estricta de estados.
@@ -10,33 +10,44 @@ El diseño arquitectónico está basado en **Monolito Modular con Patrones Distr
 
 ---
 
+## 📌 Estado del Roadmap (Master Plan)
+
+- [x] **Fase 0: Consolidación y Verificación de Fundamentos Core** (FSM `canTransitionTo`, Idempotencia JSONB con Jackson 3, Firma JWS RSA, Tracing MDC y Pruebas WebMvcTest).
+- [x] **Fase 1: Event-Driven In-Process Decoupling** (Desacoplamiento total intra-proceso usando `ApplicationEventPublisher` y `@TransactionalEventListener`).
+- [ ] **Fase 2: Resiliencia en Outbox Worker** (Exponential Backoff + Dead Letter Queue - DLQ).
+- [ ] **Fase 3: Guardián de Fronteras Modulares** (Spring Modulith & ArchUnit).
+- [ ] **Fase 4: Reconciliación Automática y Autocuración** (`reconciliation` worker).
+- [ ] **Fase 5: Observabilidad Extendida & Rate Limiting Multi-tenant** (Bucket4j).
+
+---
+
 ## 🏗️ Arquitectura y Patrones Core
 
 * **Monolito Modular:** El sistema está estructurado en módulos/dominios independientes (`payments`, `outbox`, `security`, `shared`) conviviendo dentro del mismo ejecutable Spring Boot. Mantiene fronteras claras de dominio con la facilidad de un despliegue único.
-* **Transactional Outbox Pattern (`outbox`):** Garantiza la entrega de eventos sin recurrir a transacciones distribuidas 2PC. Los eventos se persisten en la tabla `outbox_events` dentro de la misma transacción del pago y son procesados asíncronamente por `OutboxProcessorWorker`.
+* **Event-Driven In-Process Decoupling (`payments` $\rightarrow$ `outbox`):** El módulo de pagos publica eventos de dominio `PaymentStatusChangedEvent` a través de `ApplicationEventPublisher`. El módulo de pagos **ya no conoce las entidades ni repositorios de Outbox**.
+* **Transactional Outbox Pattern con Listeners (`outbox`):** `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` captura los eventos del pago solo cuando la transacción original hace `COMMIT`. Utiliza `@Transactional(propagation = Propagation.REQUIRES_NEW)` para persistir el `OutboxEvent` en una transacción aislada de forma 100% segura.
 * **Firma Criptográfica JWS (`security`):** Firma asimétrica de eventos con par de claves RSA (Nimbus JOSE). Esto asegura la integridad y autenticidad del mensaje como si se transmitiera hacia sistemas externos o microservicios.
-* **Idempotency Engine:** Escudo de base de datos que intercepta peticiones de red duplicadas o reintentos fallidos, cacheando el código HTTP y el payload original en formato `jsonb` para evitar dobles cobros.
-* **Finite State Machine (FSM):** Modelo de dominio rico encapsulado. Las transacciones de los pagos (ej. `CREATED` -> `AUTHORIZED` -> `CONFIRMED`) están gobernadas por reglas inmutables que rechazan saltos de estado ilegales.
+* **Engine de Idempotencia:** Escudo de base de datos que intercepta peticiones de red duplicadas o reintentos fallidos, cacheando el código HTTP y el payload original en formato `jsonb` de PostgreSQL para evitar dobles cobros.
+* **Finite State Machine (FSM):** Modelo de dominio rico encapsulado. Las transacciones de los pagos (`CREATED` -> `AUTHORIZED` -> `SUBMITTED` -> `CONFIRMED` / `FAILED` -> `RECONCILED`) están gobernadas por el método `canTransitionTo` que rechaza saltos de estado ilegales.
 * **ACID Transactions & Optimistic Locking:** Uso estricto de orquestación `@Transactional` y versionado `@Version` de Hibernate para consistencia atómica.
-* **Global Exception Handling:** Interceptor global (`@RestControllerAdvice`) que atrapa excepciones de negocio (pagos no encontrados, transacciones ilegales) y las transforma en respuestas JSON estandarizadas.
+* **Global Exception Handling & MDC Tracing:** Interceptor global (`@RestControllerAdvice`) que atrapa excepciones de negocio transformándolas en `ErrorResponse` DTOs, junto con `RequestIdFilter` que inyecta `X-Request-ID` al MDC de logs.
 
 ---
 
 ## 📐 Estructura del Monolito Modular
 
-### ¿Es un sistema distribuido?
-> **No es un sistema 100% distribuido**, es un **Monolito Modular que implementa Patrones Distribuidos**. Corre en un solo proceso Java/Spring Boot con una base de datos PostgreSQL compartida, pero utiliza patrones como **Transactional Outbox**, **Idempotencia** y **Firma JWS** para garantizar desacoplamiento y consistencia eventual como en arquitecturas distribuidas.
-
 ### Organización de Paquetes por Dominio
 
 ```text
 src/main/java/com/vk42/cbp/firstmodule/
-├── payments/              # Módulo de Pagos
+├── payments/              # Módulo de Pagos (Core Engine)
 │   ├── api/               # PaymentController, DTOs (Request/Response, Webhooks)
-│   ├── domain/            # Entities (PaymentIntent, IdempotencyKeyRecord), Enums, Repositories
-│   └── service/           # PaymentService, PaymentServiceImpl
-├── outbox/                # Módulo Transactional Outbox
+│   ├── domain/            # Entities (PaymentIntent, IdempotencyKeyRecord), Enums (PaymentState)
+│   ├── events/            # PaymentStatusChangedEvent (Evento de Dominio Inmutable)
+│   └── service/           # PaymentService, PaymentServiceImpl (Publica eventos de dominio)
+├── outbox/                # Módulo Transactional Outbox (Desacoplado)
 │   ├── domain/            # OutboxEvent, OutboxEventRepository
+│   ├── listener/          # OutboxEventListener (@TransactionalEventListener AFTER_COMMIT)
 │   └── worker/            # OutboxProcessorWorker (@Scheduled)
 ├── security/              # Módulo de Seguridad y Criptografía
 │   ├── jws/               # WorkerSignatureService (Firma JWS RSA)
@@ -107,7 +118,7 @@ graph TB
 
 ---
 
-### 2. Flujo de Secuencia (Transactional Outbox & Idempotencia)
+### 2. Flujo de Secuencia (Desacoplado por Eventos & Transactional Outbox)
 
 ```mermaid
 sequenceDiagram
@@ -116,39 +127,45 @@ sequenceDiagram
     participant Filter as RequestIdFilter
     participant Controller as PaymentController
     participant Service as PaymentServiceImpl
-    participant Security as WorkerSignatureService
+    participant Publisher as ApplicationEventPublisher
+    participant Listener as OutboxEventListener
     participant DB as PostgreSQL
     participant Worker as OutboxProcessorWorker
 
-    Client->>Filter: POST /api/v1/payments (Payload + IdempotencyKey)
+    Client->>Filter: POST /api/v1/payments/webhooks (Payload + IdempotencyKey)
     Filter->>Filter: Inyecta X-Request-ID en MDC Log
     Filter->>Controller: Transfiere petición
-    Controller->>Service: initializePayment(request)
+    Controller->>Service: processWebhooks(payload)
     
     rect rgb(240, 248, 255)
-        note over Service,DB: Transacción Local de Base de Datos
+        note over Service,DB: Transacción Principal de Pago
         Service->>DB: Verifica IdempotencyKeyRecord
         alt Clave ya existe
             Service-->>Controller: Retorna respuesta almacenada en caché
             Controller-->>Client: 200 OK (Respuesta cacheada)
         else Clave nueva
-            Service->>DB: Guarda PaymentIntent (Estado: CREATED)
+            Service->>DB: Actualiza PaymentIntent (Ej. CREATED -> AUTHORIZED)
             Service->>DB: Guarda IdempotencyKeyRecord
-            Service->>Security: Genera Firma JWS del evento
-            Security-->>Service: Payload firmado (Token JWS)
-            Service->>DB: Guarda OutboxEvent (Estado: PENDING, Payload JWS)
+            Service->>Publisher: publishEvent(PaymentStatusChangedEvent)
+            note over Service: Módulo payments NUNCA accede a Outbox DB
         end
     end
 
-    Service-->>Controller: Confirma creación de Pago
-    Controller-->>Client: 201 Created {"status": "SUCCESS", "paymentId": X}
+    Service-->>Controller: Confirma actualización de Pago
+    Controller-->>Client: 200 OK {"status": "SUCCESS", "paymentId": X}
 
-    loop Polling Asíncrono (Cada X segundos)
-        Worker->>DB: findAllByProcessedFalse()
+    rect rgb(255, 240, 245)
+        note over Listener,DB: Evento Post-Commit (AFTER_COMMIT) & Transacción REQUIRES_NEW
+        Publisher->>Listener: Dispara Listener en AFTER_COMMIT
+        Listener->>DB: Guarda OutboxEvent en tabla outbox_events
+    end
+
+    loop Polling Asíncrono (Cada 5 segundos)
+        Worker->>DB: findTop50ByOrderByCreatedAtAsc()
         DB-->>Worker: Lista de OutboxEvents pendientes
         loop Por cada evento
-            Worker->>Security: Firma / Verifica firma de mensaje
-            Worker->>DB: Marca OutboxEvent como procesado (processed = true)
+            Worker->>Worker: Firma payload JWS (RSA RS256)
+            Worker->>DB: Elimina / procesa OutboxEvent
         end
     end
 ```
