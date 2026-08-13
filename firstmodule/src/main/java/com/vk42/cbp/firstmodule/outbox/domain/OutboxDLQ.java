@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnTransformer;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -14,10 +13,12 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OutboxEvent {
+public class OutboxDLQ {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    private UUID originalEventId;
 
     private String aggregateType;
 
@@ -29,11 +30,7 @@ public class OutboxEvent {
     @ColumnTransformer(write = "?::jsonb")
     private String payload;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime failedAt;
 
-    // Reentry
-    private Integer retryCount = 0;
-    private Integer maxRetries = 5;
-    private String lastError;
-    private Instant nextRetryAt;
+    private String reason;
 }
