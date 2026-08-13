@@ -62,7 +62,7 @@ src/main/java/com/vk42/cbp/firstmodule/
 
 ## 📊 Diagramas de Arquitectura
 
-### 1. Diagrama de Componentes (Monolito Modular)
+### 1. Diagrama de Componentes (Monolito Modular Desacoplado)
 
 ```mermaid
 graph TB
@@ -79,11 +79,12 @@ graph TB
         subgraph PaymentsModule ["Payments Module (payments)"]
             CTRL["PaymentController (/api/v1/payments)"]
             SVC["PaymentService / PaymentServiceImpl"]
-            PAY_DOM["PaymentIntent & IdempotencyKeyRecord"]
+            EVENT["PaymentStatusChangedEvent (Event)"]
             PAY_REPO["PaymentIntentRepository & IdempotencyKeyRepo"]
         end
 
         subgraph OutboxModule ["Outbox Module (outbox)"]
+            LISTENER["OutboxEventListener (@TransactionalEventListener)"]
             OUT_DOM["OutboxEvent"]
             OUT_REPO["OutboxEventRepository"]
             WORKER["OutboxProcessorWorker (@Scheduled)"]
@@ -105,8 +106,9 @@ graph TB
     FILTER --> CTRL
     CTRL --> SVC
     SVC --> PAY_REPO
-    SVC --> OUT_REPO
-    SVC --> JWS
+    SVC -->|Publica Evento de Dominio| EVENT
+    EVENT -->|AFTER_COMMIT| LISTENER
+    LISTENER --> OUT_REPO
 
     WORKER -->|Polls Pending Events| OUT_REPO
     WORKER -->|Signs Payload| JWS
