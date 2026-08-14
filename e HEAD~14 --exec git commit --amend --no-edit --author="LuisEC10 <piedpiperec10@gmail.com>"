@@ -1,0 +1,103 @@
+[33mcommit c44554d2becbab0a97ac1e8883b518acf444228f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:25 2026 -0500
+
+    chor: phase 2 -> part 5, 6
+
+[33mcommit 873e65e54a42d6cc46c585bc25ecbb3098de75b3[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:24 2026 -0500
+
+    feat(outbox): implement exponential backoff and dead letter queue (DLQ) for resilient event processing
+
+[33mcommit 9a347bab846d050a85211b274d9b5020b26fe313[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:24 2026 -0500
+
+    fix: ajuyste de arquitectura
+
+[33mcommit 325130ba5a70ca331dbbd8c11a971b3a534be259[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:24 2026 -0500
+
+    fix: cambio en el readme.md
+
+[33mcommit 9e8f0a143282831e0efcb8ff9e4f9e055610e1fc[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:24 2026 -0500
+
+    feat(outbox): implement event-driven decoupling with TransactionalEventListener
+    - Create immutable PaymentStatusChangedEvent domain record
+    - Inject ApplicationEventPublisher in PaymentServiceImpl to broadcast state changes
+    - Decouple payments module from OutboxEventRepository
+    - Create OutboxEventListener with AFTER_COMMIT phase and REQUIRES_NEW propagation
+    - Update WorkerSignatureService to verify signed JWS objects
+    - Update README.md and master plan progress (Phase 0 and Phase 1 completed)
+
+[33mcommit 6d344e62bfeed3799d2b36397cb330b6dac5ad58[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:24 2026 -0500
+
+    test: added some test about Payment Core State and Idempotency
+
+[33mcommit 17e7dcb1606c577ccd7ad46b58198e41fb1eda8f[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:24 2026 -0500
+
+    fix: little change in name method
+
+[33mcommit a7b8be45bb51964f99fef43a704789a6b3f7c902[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:24 2026 -0500
+
+    final next-steps plan
+
+[33mcommit 56d9d26f76624b33e59b3090d42648e5d9a60712[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:24 2026 -0500
+
+    next-steps.md target
+
+[33mcommit d1acb6ecc8ceb42982e6f68c9c8ed8c68e93634e[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:24 2026 -0500
+
+    refactor(architecture): sanitize secrets and refactor to modular monolith
+    
+        - Extract crypto keys to environment variables and create application.properties.example
+        - Ignore local secret files in .gitignore
+        - Reorganize layered packages into domain modules (payments, outbox, security, shared)
+        - Fix Lombok annotation processor scope in pom.xml
+        - Update official README.md with modular architecture details and Mermaid diagrams
+
+[33mcommit 155b82239dfb341ae6e264a358b582cd5f84dedc[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:24 2026 -0500
+
+    refactor(architecture): refactor to modular monolith and document outbox pattern
+    
+        - Reorganize layered packages into domain modules (payments, outbox, security, shared)
+        - Configure Lombok annotation processing in pom.xml for clean builds
+        - Update official README.md with modular monolith architecture, package structure and Mermaid diagrams
+
+[33mcommit 98273e18cb709f0569c70e329c904d6773f7022b[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:24 2026 -0500
+
+    refactor(architecture): refactor to modular monolith and document outbox pattern
+    
+        - Reorganize layered packages into domain modules (payments, outbox, security, shared)
+        - Configure Lombok annotation processing in pom.xml for clean builds
+        - Update official README.md with modular monolith architecture, package structure and Mermaid diagrams
+
+[33mcommit f70d788fa5dabd8352edbe77832d026f9f9ecd20[m
+Author: LuisEC10 <piedpiperec10@gmail.com>
+Date:   Wed Aug 12 23:29:24 2026 -0500
+
+    outbox-table - filter-request-id
+
+[33mcommit 2e16ba712e23a022ef6d4944555a8e915e4ed7cb[m
+Author: = <=>
+Date:   Sat Aug 8 14:18:39 2026 -0500
+
+    full b2b-micropayment-core project
