@@ -2,7 +2,6 @@ package com.vk42.cbp.firstmodule.security.jws;
 
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.RSAKey;
 
 import org.springframework.beans.factory.annotation.Value;

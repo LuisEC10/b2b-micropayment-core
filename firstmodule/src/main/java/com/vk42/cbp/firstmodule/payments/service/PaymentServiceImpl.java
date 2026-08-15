@@ -8,8 +8,6 @@ import com.vk42.cbp.firstmodule.payments.domain.IdempotencyKeyRecordRepository;
 import com.vk42.cbp.firstmodule.payments.domain.PaymentIntent;
 import com.vk42.cbp.firstmodule.payments.domain.PaymentIntentRepository;
 import com.vk42.cbp.firstmodule.payments.domain.PaymentState;
-import com.vk42.cbp.firstmodule.outbox.domain.OutboxEvent;
-import com.vk42.cbp.firstmodule.outbox.domain.OutboxEventRepository;
 import com.vk42.cbp.firstmodule.payments.events.PaymentStatusChangedEvent;
 import com.vk42.cbp.firstmodule.shared.exceptions.IllegalStateTransactionException;
 import com.vk42.cbp.firstmodule.shared.exceptions.PaymentNotFoundException;
