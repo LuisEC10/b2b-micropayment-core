@@ -14,8 +14,8 @@ El diseño arquitectónico está basado en **Monolito Modular con Patrones Distr
 
 - [x] **Fase 0: Consolidación y Verificación de Fundamentos Core** (FSM `canTransitionTo`, Idempotencia JSONB con Jackson 3, Firma JWS RSA, Tracing MDC y Pruebas WebMvcTest).
 - [x] **Fase 1: Event-Driven In-Process Decoupling** (Desacoplamiento total intra-proceso usando `ApplicationEventPublisher` y `@TransactionalEventListener`).
-- [ ] **Fase 2: Resiliencia en Outbox Worker** (Exponential Backoff + Dead Letter Queue - DLQ). -> Faltan paso 5 y 6
-- [ ] **Fase 3: Guardián de Fronteras Modulares** (Spring Modulith & ArchUnit).
+- [x] **Fase 2: Resiliencia en Outbox Worker** (Exponential Backoff + Dead Letter Queue - DLQ).
+- [x] **Fase 3: Guardián de Fronteras Modulares** (Spring Modulith & ArchUnit).
 - [ ] **Fase 4: Reconciliación Automática y Autocuración** (`reconciliation` worker).
 - [ ] **Fase 5: Observabilidad Extendida & Rate Limiting Multi-tenant** (Bucket4j).
 
